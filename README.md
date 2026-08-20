@@ -53,6 +53,8 @@ gates/
   tag-060-pattern-substanz.md
   tag-090-reproduktion.md
   tag-180-charter-gate.md           Kriterien + Vorab-Check (noch nicht fällig)
+tools/
+  readiness_check.sh                Read-only Live-Check: sind wir bereit für Tag 180?
 ```
 
 Jede Gate-Datei ist **eigenständig** und identisch aufgebaut: vorab-registrierte Hypothesen →
