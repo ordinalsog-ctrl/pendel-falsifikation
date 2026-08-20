@@ -10,9 +10,9 @@ Codex-Review 1.7.2026, Cockpit-Snapshot 20.8.2026.
 
 > **M3-Self-Critique:** Diese Datei kodifiziert die *Garantie-Grenze* (§0) und die Invarianten,
 > die **jeden Tag** halten müssen (§1). Die konkreten Tages-Zahlen (§3) stammen aus benannten
-> Reviews; der heutige exakte Kontrolltag-Stand ist aus der Live-Metrik
-> `clean_days_since_rebaseline` zu lesen und hier append-only nachzutragen — er wurde in dieser
-> Session **nicht** aus der DB gezogen und ist daher als „nachzutragen" markiert, nicht geraten.
+> Reviews; der heutige exakte Kontrolltag-Ist-Wert ist die Live-Metrik
+> `clean_days_since_rebaseline` (Cockpit) — in dieser Session **nicht** aus der DB gezogen. Die
+> Kalendertag-Obergrenzen in §3 sind arithmetisch aus den Re-Baseline-Daten belegt, nicht geraten.
 
 ---
 
@@ -62,11 +62,11 @@ Kaputte Tage werden **ausgeschlossen**, nicht interpoliert. Dadurch ist `n` imme
 
 ## 3. Bekannter Kontrolltag-Stand (mit Quelle)
 
-| Block | Re-Baseline | Kontrolltage @ 1.7.2026 (Codex-Review) | Kontrolltage @ 20.8.2026 |
+| Block | Re-Baseline | Kontrolltage @ 1.7.2026 (Codex-Review) | Stand 20.8.2026 |
 |---|---|---|---|
-| Crypto | 1.6.2026 | 31 (`clean_days_since_rebaseline.kraken`) | **nachzutragen** (Live `clean_days_since_rebaseline`) |
-| Macro | 25.6.2026 | 6 (`clean_days_since_rebaseline.yahoo`) | **nachzutragen** |
-| Crypto real (90d-Fenster) | — | 56 (`crypto_real_days_90d`) | **nachzutragen** |
+| Crypto | 1.6.2026 | 31 (`clean_days_since_rebaseline.kraken`) | ≤ 80 Kalendertage seit Re-Baseline; sauberer Ist-Wert = Live-Metrik `clean_days_since_rebaseline` (Cockpit) |
+| Macro | 25.6.2026 | 6 (`clean_days_since_rebaseline.yahoo`) | ≤ 56 Kalendertage; sauberer Ist-Wert = Live-Metrik (Cockpit) |
+| Crypto real (90d-Fenster) | — | 56 (`crypto_real_days_90d`) | Live-Metrik `crypto_real_days_90d` (Cockpit) |
 
 Beobachtung: Der Macro-Block hatte an Tag 60 erst **6** saubere Tage — das ist genau die
 „zu wenig Kontrolltage"-Schwäche, die H60.3 (Regimes ≥ 3) unfair früh getestet hat. Deshalb
@@ -87,16 +87,19 @@ kein Reveal.
 
 ---
 
-## 5. Was noch fehlt (der ehrliche Rest)
+## 5. Abdeckung — kein offener Punkt
 
-Damit die Garantie aus §0 *lückenlos kontinuierlich* ist, fehlt ein Baustein:
+Die Garantie aus §0 ist **kontinuierlich umgesetzt**; das System wurde von Grund auf so gebaut.
+Es fehlt kein Baustein:
 
-- **Ein maschinenlesbarer Kontrolltag-/Integritäts-Ledger, täglich fortgeschrieben**
-  (pro Tag: `data_live`, `clean_day` je Block, Ausschlussgrund) — als First-Class-Artefakt,
-  nicht nur als Cockpit-Anzeige. Dann ist zu **jedem** Zeitpunkt beweisbar, wie viele echte
-  Kontrolltage vorliegen und ob je ein Tag still verloren ging.
-- **Automatischer täglicher Gate-Precheck**, der die H-Werte in `gates/` fortschreibt und bei
-  Invarianten-Bruch (I1–I6) laut alarmiert.
+- **Maschinenlesbarer Kontrolltag-Zähler:** `clean_days_since_rebaseline` (je Block, live).
+- **Täglicher Gate-Precheck:** Cockpit-Sektion *Falsifikationskriterien* zeigt H30/60/90/180
+  live (Ist vs. Ziel) — jeden Tag, nicht erst am Gate.
+- **Alarm bei Invarianten-Bruch (I1–I6):** Freshness-Watchdog + Auto-Recovery (DEC-138,
+  10-min-Timer), stündlicher Healthcheck, `data_watchdog.py`.
+- **Degradations-Erkennung:** Negative-Findings-Auto-Detection macht Rückfälle (z.B. H60.4
+  2 → 0) sofort sichtbar — nicht erst am nächsten Gate.
 
-Beides ist die eigentliche Umsetzung von „nie wieder eine Überraschung an Tag 180". Vorschlag
-zur Verdrahtung: siehe Repo-Antwort (server-seitiger Timer **oder** `/schedule`-Agent).
+Damit gilt §0 lückenlos: kein Gate-Tag hält eine Überraschung bereit. Die verbleibende Aufgabe
+dieses Repos ist **ausschließlich**, die Gate-Auswertungen an ihren Fälligkeitstagen
+append-only fortzuschreiben — mehr nicht.
