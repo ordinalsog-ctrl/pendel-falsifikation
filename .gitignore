@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Editor / temp
+*.swp
+*~
+.cache/
+
+# Lokale Cockpit-/DB-Exporte (nie eingecheckt — Rohdaten leben auf dem Server)
+*.sql
+*.sql.gpg
+*.csv
+current_manifest.yaml
