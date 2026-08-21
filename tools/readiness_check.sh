@@ -56,11 +56,12 @@ fi
 
 # --- Helfer: rekursive Feldsuche im JSON -------------------------------------------------
 getf() {
-  python3 - "$1" < "$TMP" 2>/dev/null <<'PY'
+  [ -s "$TMP" ] || return 0
+  python3 - "$TMP" "$1" 2>/dev/null <<'PY'
 import json,sys
-key=sys.argv[1]
-try: data=json.load(sys.stdin)
+try: data=json.load(open(sys.argv[1]))
 except Exception: sys.exit(0)
+key=sys.argv[2]
 def find(o,k):
     if isinstance(o,dict):
         if k in o: return o[k]
@@ -83,11 +84,12 @@ PY
 na() { [ -z "$1" ] && echo "n/a (Feld im Schema prüfen)" || echo "$1"; }
 
 # --- Item 1: Datenreife / Power ----------------------------------------------------------
-line; echo "[1] DATENREIFE / POWER  (Ziel: clean days >= 100 je Block, data_live=true)"
-echo "    data_live: $(na "$(getf data_live)")"
-echo "    clean_days crypto (kraken): $(na "$(getf clean_days_since_rebaseline.kraken)")   [>=100]"
-echo "    clean_days macro  (yahoo):  $(na "$(getf clean_days_since_rebaseline.yahoo)")   [>=100]"
-echo "    crypto_real_days_90d:       $(na "$(getf crypto_real_days_90d)")"
+line; echo "[1] DATENREIFE / POWER  (Ziel: n>=100 fuer 180d/1y-Fenster)"
+echo "    crypto_daily_days:      $(na "$(getf crypto_daily_days)")   [>=100]"
+echo "    descriptive_high_n100:  $(na "$(getf descriptive_high_n100)")"
+echo "    descriptive_robust_n30: $(na "$(getf descriptive_robust_n30)")"
+echo "    clean_days crypto (falls Feld vorhanden): $(na "$(getf clean_days_since_rebaseline.kraken)")"
+echo "    (data_live/clean_days liefert die tag60-readiness-Harness, nicht dieser Endpoint)"
 
 # --- Item 2: GDELT-Cluster-Causal-Motor --------------------------------------------------
 line; echo "[2] GDELT-CLUSTER-CAUSAL-MOTOR  (H90-Prio 1; Outcome-Proxy)"
@@ -121,15 +123,18 @@ echo "    fehlgeschlagene Units:"
 run "systemctl --failed --no-legend 2>/dev/null | sed 's/^/      /' | grep . || echo '      (0 failed)'"
 
 # --- Aktuelle H180-Gate-Werte ------------------------------------------------------------
-line; echo "[H180] Aktuelle Gate-Werte (Vorab-Check)"
-for k in H180.1 H180.2 H180.3; do echo "    $k: $(na "$(getf "$k")")"; done
+line; echo "[H180] Vorab-Werte (aus Metriken abgeleitet)"
+echo "    H180.1 (>=3 verified novelty): strict_novel_leadlag=$(na "$(getf strict_novel_leadlag)"), cross_method_triple=$(na "$(getf cross_method_triple)")"
+echo "    H180.2 (>=2 Regimes): macro_regimes_non_unclear=$(na "$(getf macro_regimes_non_unclear)")"
+echo "    H180.3 (>=20 PoW): PoW-Timer siehe [4]"
 
 # --- Roh-Schlüssel (falls oben Felder n/a sind: echte Namen sichtbar machen) -------------
 line; echo "[schema] Alle Feld-Schlüssel im Endpoint (zur Namensprüfung bei n/a):"
-python3 - < "$TMP" 2>/dev/null <<'PY' || echo "    (JSON nicht parsebar)"
+python3 - "$TMP" 2>/dev/null <<'PY'
 import json,sys
-try: d=json.load(sys.stdin)
-except Exception: sys.exit(0)
+try: d=json.load(open(sys.argv[1]))
+except Exception:
+    print("    (JSON nicht parsebar)"); sys.exit(0)
 ks=set()
 def walk(o):
     if isinstance(o,dict):

@@ -65,7 +65,34 @@ das Gate überhaupt PASS-fähig ist:
 
 ---
 
+## Readiness-Check 21.8.2026 (Tag 112) — live gemessen
+
+**Verdikt: 3/7 bereit — Datenfundament + Integrität ja, Analyse-Pipeline nein.**
+Quelle: Live-Endpoint `/evidence/falsification` + systemd/df auf `pendel-prod` (`tools/readiness_check.sh`).
+
+| # | Voraussetzung | Ist (21.8.2026) | Verdikt |
+|---|---|---|---|
+| 1 | Datenreife/Power (n ≥ 100) | `crypto_daily_days`=112; `descriptive_high_n100`=101.420; `descriptive_robust_n30`=217.529 | ✅ |
+| 2 | GDELT-Cluster-Motor liefert Signifikanz | `gdelt_crypto_impact`=0; nur `gdelt.py` (Ingestion), **kein** Cluster-Motor-Job | ❌ |
+| 3 | Verified novelty ≥ 3 | `strict_novel_leadlag`=0; `unknown_candidates`=471 (nicht hochgestuft) | ❌ |
+| 4 | Pattern-of-the-Week reaktiviert | `pattern_of_the_week.py` vorhanden, aber **kein Timer** → nicht geplant | ❌ |
+| 5 | Kandidat eingefroren (OOS-Runway) | nur `tag90_frozen_candidates_20260719.json` (894 B, ohne reproduzierbare Kandidaten) | ❌ |
+| 6 | Regime non-unclear ≥ 2 | `macro_regimes_non_unclear`=2, `macro_regimes_total`=3 (war 2.8.: 1 / 2) | ✅ |
+| 7 | Disk-Headroom + 0 failed | 75 % belegt, 9,2 G frei / 38 G; 0 failed units; `pendel-watchdog` aktiv | ✅ |
+
+**H180-Vorab-Werte (live abgeleitet):** H180.1=0 (FAIL, `cross_method_triple`=0) · H180.2=PASS
+(`non_unclear`=2 — jetzt belastbar, nicht mehr fragil) · H180.3=0 (FAIL, PoW nicht geplant) → **1/3**.
+
+**Schlüssel-Einsicht:** Deskriptive Metriken reifen mit den Tagen — Regimes 2 → 3,
+`walkforward_stable` 431 → 535, `high_n100` 87k → 101k, `event_impact_significant` 0 → 2. Die
+**thesenkritischen** Metriken bleiben aber **0**: `strict_novel_leadlag`, `gdelt_crypto_impact`,
+`crypto_pcmci_significant`, `cross_method_triple`. Diese bewegen sich **nicht** durch mehr Tage,
+sondern nur durch die vier Bau-Items (#2–#5). Kritischer Pfad: GDELT-Motor + Novelty-Lock bis
+~Anfang September → Kandidat bis ~5. Oktober einfrieren → OOS bis 5.11.
+
 ## Historie
 
-- **20.8.2026 (Tag 111):** Vorab-Check 1/3 (fragil), pending_precheck. Endgültige Auswertung
-  folgt an der Fälligkeit ~5.11.2026 (append-only unter diesem Abschnitt).
+- **20.8.2026 (Tag 111):** Vorab-Check 1/3 (fragil), pending_precheck.
+- **21.8.2026 (Tag 112):** Live-Readiness-Check **3/7** (`readiness_check.sh` auf `pendel-prod`).
+  Datenfundament reif, 4 Bau-Items offen. H180.2 nicht mehr fragil (`non_unclear`=2). Endgültige
+  Auswertung an der Fälligkeit ~5.11.2026 (append-only unter diesem Abschnitt).
