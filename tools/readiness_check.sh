@@ -2,47 +2,60 @@
 # Pendel — Readiness-Check für den nächsten Kontrollpunkt (Tag 180, ~5.11.2026)
 #
 # Zweck: Prüft die 7 Voraussetzungen für eine ERSTE SERIÖSE Auswertung an Tag 180
-#        (siehe gates/tag-180-charter-gate.md §Readiness). Read-only.
+#        (siehe gates/tag-180-charter-gate.md §Readiness). READ-ONLY.
 #
-# WICHTIG:
-#   - NUR LESEND. Fasst den Server nicht an: curl GET, ls, df, systemctl is-enabled/list.
-#     Keine Writes, keine Restarts, keine DB-Änderung.
-#   - Muss in einer Session MIT SSH-Zugang zum Pendel-Host laufen.
-#   - Feldnamen stammen aus den Live-Zitaten in PENDEL_H90_REVIEW_2026-08-02.md und dem
-#     Codex-Live-Check (1.7.2026). Bei Schema-Drift: Namen an api.py / current_manifest.yaml
-#     anpassen. Der JSON-Parser sucht Felder REKURSIV, damit Verschachtelung ihn nicht bricht.
+# Läuft in BEIDEN Umgebungen — automatisch erkannt an /opt/pendel:
+#   - DIREKT AUF DEM SERVER (root@pendel-prod): alle Checks lokal, kein SSH.
+#   - VOM MAC AUS: alle Checks via `ssh $PENDEL_SSH` (Default-Alias: pendel).
+#   Override: PENDEL_MODE=local|remote
 #
-# Nutzung:
+# WICHTIG: NUR LESEND — curl GET, ls, df, systemctl is-enabled/list. Keine Writes,
+#          keine Restarts, keine DB-Änderung.
+#
+# Feldnamen stammen aus den Live-Zitaten in PENDEL_H90_REVIEW_2026-08-02.md und dem
+# Codex-Live-Check (1.7.2026). Der JSON-Parser sucht Felder REKURSIV (Schema-Drift-sicher).
+# Ist ein Wert "n/a", steht das Feld unter anderem Namen im Schema -> Rohschlüssel am Ende.
+#
+# Server-Nutzung:
+#   curl -fsSL https://raw.githubusercontent.com/ordinalsog-ctrl/pendel-falsifikation/main/tools/readiness_check.sh -o /root/readiness_check.sh
+#   bash /root/readiness_check.sh
+# Mac-Nutzung:
 #   PENDEL_SSH=pendel ./tools/readiness_check.sh
-#   (Default-SSH-Alias: "pendel". Endpoint: http://127.0.0.1:8080/evidence/falsification)
 
 set -uo pipefail
 
 HOST="${PENDEL_SSH:-pendel}"
 API="${PENDEL_API:-http://127.0.0.1:8080}"
-TMP="$(mktemp -t pendel_falsif.XXXXXX.json)"
+TMP="$(mktemp -t pendel_falsif.XXXXXX.json 2>/dev/null || mktemp)"
 trap 'rm -f "$TMP"' EXIT
+
+# --- Mode-Detection: bin ich auf dem Server oder auf dem Mac? ----------------------------
+if [ -n "${PENDEL_MODE:-}" ]; then MODE="$PENDEL_MODE"
+elif [ -d /opt/pendel ] || [ "$(hostname 2>/dev/null)" = "pendel-prod" ]; then MODE="local"
+else MODE="remote"; fi
+
+run() { if [ "$MODE" = "remote" ]; then ssh "$HOST" "$1"; else bash -c "$1"; fi; }
 
 line() { printf '%s\n' "----------------------------------------------------------------------"; }
 echo "Pendel Readiness-Check — Ziel-Kontrollpunkt: Tag 180 (~5.11.2026)"
-echo "Host: $HOST   API: $API   Stand: $(date -u +%Y-%m-%dT%H:%MZ)"
+echo "Mode: $MODE   API: $API   Stand: $(date -u +%Y-%m-%dT%H:%MZ)"
 line
 
-# --- 0. SSH-Konnektivität + Liveness zuerst (Post-Mortem-Regel) -------------------------
-if ! ssh -o ConnectTimeout=8 -o BatchMode=yes "$HOST" true 2>/dev/null; then
-  echo "ABBRUCH: SSH zu '$HOST' nicht möglich. Ohne Live-Zugang kein Readiness-Status."
-  echo "Setze PENDEL_SSH=<alias> oder starte die Session mit SSH-Zugang."
-  exit 1
+# --- 0. Liveness zuerst (Post-Mortem-Regel) ---------------------------------------------
+if [ "$MODE" = "remote" ]; then
+  if ! ssh -o ConnectTimeout=8 -o BatchMode=yes "$HOST" true 2>/dev/null; then
+    echo "ABBRUCH: SSH zu '$HOST' nicht möglich. Setze PENDEL_SSH=<alias> oder laufe auf dem Server."
+    exit 1
+  fi
 fi
-
-ssh "$HOST" "curl -s --max-time 15 $API/evidence/falsification" > "$TMP" 2>/dev/null
+run "curl -s --max-time 15 $API/evidence/falsification" > "$TMP" 2>/dev/null
 if [ ! -s "$TMP" ]; then
   echo "WARN: /evidence/falsification lieferte keine Daten (API down? Endpoint umbenannt?)."
   echo "      Gate-Metriken (Items 1,2,3,6) sind ohne diese Antwort nicht auswertbar."
 fi
 
 # --- Helfer: rekursive Feldsuche im JSON -------------------------------------------------
-getf() { # getf <feldname[.subkey]>  -> Wert oder leer
+getf() {
   python3 - "$1" < "$TMP" 2>/dev/null <<'PY'
 import json,sys
 key=sys.argv[1]
@@ -69,64 +82,67 @@ PY
 }
 na() { [ -z "$1" ] && echo "n/a (Feld im Schema prüfen)" || echo "$1"; }
 
-# --- Item 1: Datenreife / Power (n>=100, data_live) --------------------------------------
+# --- Item 1: Datenreife / Power ----------------------------------------------------------
 line; echo "[1] DATENREIFE / POWER  (Ziel: clean days >= 100 je Block, data_live=true)"
-dl=$(getf data_live); ck=$(getf clean_days_since_rebaseline.kraken)
-cy=$(getf clean_days_since_rebaseline.yahoo); cr=$(getf crypto_real_days_90d)
-echo "    data_live: $(na "$dl")"
-echo "    clean_days crypto (kraken): $(na "$ck")   [Schwelle >=100]"
-echo "    clean_days macro (yahoo):   $(na "$cy")   [Schwelle >=100]"
-echo "    crypto_real_days_90d:       $(na "$cr")"
+echo "    data_live: $(na "$(getf data_live)")"
+echo "    clean_days crypto (kraken): $(na "$(getf clean_days_since_rebaseline.kraken)")   [>=100]"
+echo "    clean_days macro  (yahoo):  $(na "$(getf clean_days_since_rebaseline.yahoo)")   [>=100]"
+echo "    crypto_real_days_90d:       $(na "$(getf crypto_real_days_90d)")"
 
-# --- Item 2: GDELT-Cluster-Causal-Motor (Outcome-Proxy) ----------------------------------
+# --- Item 2: GDELT-Cluster-Causal-Motor --------------------------------------------------
 line; echo "[2] GDELT-CLUSTER-CAUSAL-MOTOR  (H90-Prio 1; Outcome-Proxy)"
-gci=$(getf gdelt_crypto_impact)
-echo "    gdelt_crypto_impact: $(na "$gci")   [>=1 = Motor liefert echte GDELT->Crypto-Signifikanz]"
-echo "    Hinweis: 0 kann 'Motor nicht gebaut' ODER 'gebaut, aber null' heißen -> im Zweifel"
-echo "             Tabelle/Job auf dem Server verifizieren (ls /opt/pendel/daemon | grep -i gdelt)."
+echo "    gdelt_crypto_impact: $(na "$(getf gdelt_crypto_impact)")   [>=1 = echte GDELT->Crypto-Signifikanz]"
+echo "    Job auf dem Server:"
+run "ls /opt/pendel/daemon 2>/dev/null | grep -iE 'gdelt.*(cluster|impact|motor)|cluster' | sed 's/^/      /' || echo '      (kein GDELT-Cluster-Job-File gefunden)'"
 
-# --- Item 3: Novelty-Validierung (verified vs unknown) -----------------------------------
+# --- Item 3: Novelty-Validierung ---------------------------------------------------------
 line; echo "[3] EXTERNE NOVELTY-VALIDIERUNG  (H90-Prio 2)"
-sn=$(getf strict_novel_leadlag); uc=$(getf unknown_candidates)
-echo "    strict_novel_leadlag: $(na "$sn")   [H180.1 braucht >=3 verified]"
-echo "    unknown_candidates:   $(na "$uc")   [hängen, bis Lehrbuch-Lock sie klassifiziert]"
+echo "    strict_novel_leadlag: $(na "$(getf strict_novel_leadlag)")   [H180.1 braucht >=3 verified]"
+echo "    unknown_candidates:   $(na "$(getf unknown_candidates)")   [hängen bis Lehrbuch-Lock]"
 
-# --- Item 4: Pattern-of-the-Week reaktiviert ---------------------------------------------
-line; echo "[4] PATTERN-OF-THE-WEEK  (H180.3 braucht >=20 high-confidence; PoW war disabled)"
-echo "    systemd-Timer (Suche pattern/pow):"
-ssh "$HOST" "systemctl list-timers --all 2>/dev/null | grep -iE 'pattern|pow' || echo '      (kein PoW-Timer gefunden)'"
-for u in pendel-pattern-of-the-week pendel-patternweek pendel-pow; do
-  st=$(ssh "$HOST" "systemctl is-enabled $u 2>/dev/null")
-  [ -n "$st" ] && echo "    $u: $st"
-done
-powc=$(getf pattern_of_week_high_confidence)
-echo "    PoW high-confidence count: $(na "$powc")   [Feldname ggf. anpassen]"
+# --- Item 4: Pattern-of-the-Week ---------------------------------------------------------
+line; echo "[4] PATTERN-OF-THE-WEEK  (H180.3 braucht >=20 high-confidence; war disabled)"
+run "systemctl list-timers --all 2>/dev/null | grep -iE 'pattern|pow' | sed 's/^/      /' || echo '      (kein PoW-Timer gefunden)'"
+echo "    PoW high-confidence count: $(na "$(getf pattern_of_week_high_confidence)")   [Feldname ggf. anpassen]"
 
-# --- Item 5: Kandidat vorab eingefroren --------------------------------------------------
-line; echo "[5] EINGEFRORENER KANDIDAT  (H180.1/Reproduktion; braucht n>=100 in-sample + OOS-Runway)"
-echo "    Freeze-Dateien in /opt/pendel/state:"
-ssh "$HOST" "ls -la /opt/pendel/state/ 2>/dev/null | grep -iE 'froze|tag180|tag-180' || echo '      (keine Tag-180-Freeze-Datei gefunden)'"
+# --- Item 5: Eingefrorener Kandidat ------------------------------------------------------
+line; echo "[5] EINGEFRORENER KANDIDAT  (H180.1/Reproduktion; n>=100 in-sample + OOS-Runway)"
+run "ls -la /opt/pendel/state/ 2>/dev/null | grep -iE 'froze|tag180|tag-180' | sed 's/^/      /' || echo '      (keine Tag-180-Freeze-Datei)'"
 
-# --- Item 6: Regime-Zähl-Semantik --------------------------------------------------------
+# --- Item 6: Regime-Semantik -------------------------------------------------------------
 line; echo "[6] REGIME-SEMANTIK  (H180.2 >=2; fragil solange non_unclear < total)"
-mt=$(getf macro_regimes_total); mnu=$(getf macro_regimes_non_unclear)
-echo "    macro_regimes_total:       $(na "$mt")"
-echo "    macro_regimes_non_unclear: $(na "$mnu")   [seriöser Pass erst wenn >=2 non-unclear]"
+echo "    macro_regimes_total:       $(na "$(getf macro_regimes_total)")"
+echo "    macro_regimes_non_unclear: $(na "$(getf macro_regimes_non_unclear)")   [seriös erst >=2 non-unclear]"
 
 # --- Item 7: Disk / Integrität -----------------------------------------------------------
-line; echo "[7] DISK / INTEGRITÄT  (DiskFull-Vorfall am 2.8.; kein Datenloch darf Runway fressen)"
-ssh "$HOST" "df -h / | tail -1 | awk '{print \"    root-disk: \"\$5\" belegt, \"\$4\" frei (von \"\$2\")\"}'"
+line; echo "[7] DISK / INTEGRITÄT  (DiskFull-Vorfall 2.8.; kein Datenloch darf Runway fressen)"
+run "df -h / | tail -1 | awk '{print \"    root-disk: \"\$5\" belegt, \"\$4\" frei (von \"\$2\")\"}'"
 echo "    fehlgeschlagene Units:"
-ssh "$HOST" "systemctl --failed --no-legend 2>/dev/null | sed 's/^/      /' | grep . || echo '      (0 failed)'"
+run "systemctl --failed --no-legend 2>/dev/null | sed 's/^/      /' | grep . || echo '      (0 failed)'"
 
-# --- Aktuelle H180-Gate-Werte (direkt aus dem Endpoint, falls vorhanden) -----------------
+# --- Aktuelle H180-Gate-Werte ------------------------------------------------------------
 line; echo "[H180] Aktuelle Gate-Werte (Vorab-Check)"
-for k in H180.1 H180.2 H180.3; do v=$(getf "$k"); echo "    $k: $(na "$v")"; done
+for k in H180.1 H180.2 H180.3; do echo "    $k: $(na "$(getf "$k")")"; done
+
+# --- Roh-Schlüssel (falls oben Felder n/a sind: echte Namen sichtbar machen) -------------
+line; echo "[schema] Alle Feld-Schlüssel im Endpoint (zur Namensprüfung bei n/a):"
+python3 - < "$TMP" 2>/dev/null <<'PY' || echo "    (JSON nicht parsebar)"
+import json,sys
+try: d=json.load(sys.stdin)
+except Exception: sys.exit(0)
+ks=set()
+def walk(o):
+    if isinstance(o,dict):
+        for k,v in o.items(): ks.add(k); walk(v)
+    elif isinstance(o,list):
+        for v in o: walk(v)
+walk(d)
+print("    "+", ".join(sorted(ks)))
+PY
 
 line
 cat <<'EOF'
-MARKDOWN-BLOCK zum append-only Eintragen in gates/tag-180-charter-gate.md
-(Verdikte aus den obigen Zeilen ableiten: PASS wenn Schwelle erreicht, sonst OFFEN):
+MARKDOWN-BLOCK für gates/tag-180-charter-gate.md (append-only; Verdikte oben ableiten):
 
 ## Readiness-Check <DATUM> (Tag <NNN>)
 | # | Voraussetzung | Ist | Verdikt |
