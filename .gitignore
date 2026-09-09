@@ -11,3 +11,7 @@
 *.sql.gpg
 *.csv
 current_manifest.yaml
+
+# Python build artifacts
+__pycache__/
+*.pyc
