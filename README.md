@@ -56,6 +56,10 @@ gates/
   tag-180-charter-gate.md           Kriterien + Vorab-Check (noch nicht fällig)
 tools/
   readiness_check.sh                Read-only Live-Check: sind wir bereit für Tag 180?
+motor/
+  compute_gdelt_cluster_impact.py   GDELT-Cluster-Causal-Motor (Prio 1) — Dry-Run-Default
+  schema_gdelt_cluster_impact.sql   Ergebnis-Tabelle
+  README.md                         Design + Deploy (Dry-Run vor enable) + Placebo-Lesart
 ```
 
 Jede Gate-Datei ist **eigenständig** und identisch aufgebaut: vorab-registrierte Hypothesen →
