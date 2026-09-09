@@ -48,6 +48,7 @@ Begründung: [STATUS.md](STATUS.md) §Diskrepanz-Audit.
 FALSIFIKATIONSKRITERIEN.md   Vorab-registrierte Kriterien (eingefroren, der Anker)
 STATUS.md                    Aktuelle Scorecard (Tag 111) + Diskrepanz-Audit + Evidenzbasis
 CONTROLS.md                  Kontrolltage + Integritäts-Invarianten (gegen stille Datenfehler)
+PLAN_TAG180_ENDSPURT.md      Vorab-registrierter optimaler Einsatz bis Tag 180 (ROI-geordnet)
 gates/
   tag-030-methodik-validierung.md   Kriterien + Auswertung an Fälligkeit + Verdikt
   tag-060-pattern-substanz.md
