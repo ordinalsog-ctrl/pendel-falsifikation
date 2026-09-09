@@ -90,9 +90,36 @@ Quelle: Live-Endpoint `/evidence/falsification` + systemd/df auf `pendel-prod` (
 sondern nur durch die vier Bau-Items (#2–#5). Kritischer Pfad: GDELT-Motor + Novelty-Lock bis
 ~Anfang September → Kandidat bis ~5. Oktober einfrieren → OOS bis 5.11.
 
+## GDELT×Krypto — getesteter Null-Befund (9.9.2026, Tag 132)
+
+Der geopolitische Ast (H60.4 / H180.1) war bis 9.9. **ungetestet**: `compute_event_impact.py`
+hatte `EVENT_SOURCES = fed/bls/ecb` — GDELT lief **nie** durch die Kausal-Pipeline, `gdelt_crypto_impact=0`
+war *uncomputed*, nicht getestet-null. Zwei unabhängige, **negativ-kontrollierte** Motoren gebaut
+(`motor/`) und live laufen lassen:
+
+- **v1 — Tages-Auflösung, SARIMAX-Counterfactual, Placebo** (`compute_gdelt_cluster_impact.py`):
+  `real_sig` **3** ≤ `placebo_sig` **11** → null. Die Placebo-Kontrolle entlarvte zusätzlich, dass
+  der parametrische p antikonservativ ist (11 Fehlalarme unter reinem Null).
+- **v2 — stündlich, Mittelwert- + Vola-Kanal, Permutationstest B=200** (`compute_gdelt_cluster_impact_hf.py`):
+  Mittelwert emp. **p=0.935** (real |Δμ| 0.00056 < placebo 0.00075) · Vola emp. **p=0.652**
+  (real Δσ −0.00048, unter Placebo). **Beide Kanäle null.**
+
+**Verdikt:** GDELT-Geopolitik-Schocks bewegen Krypto **nicht über das Zufallsniveau** — getestet auf
+der Zeitskala (Stunden) und im Kanal (Volatilität), die ein echtes Signal am ehesten zeigen würden,
+non-parametrisch kalibriert. Drei unabhängige Linien stimmen überein (v1, v2, 14 Anti-FOMO-Läufe).
+`gdelt_crypto_impact=0` ist damit **verdient**, nicht uncomputed. **H60.4 / H180.1 (geopolitischer Ast)
+= belastbarer Null-Befund.**
+
+**Anti-Fishing (verbindlich):** Der Test ist erschöpft. Weitere Schock-Definitionen durchzuprobieren,
+bis eine zufällig p<0.05 kreuzt, wäre p-Hacking (DEC-009-Verstoß). Der optimale *Einsatz* ist geleistet;
+das optimale *Ergebnis* ist dieser wasserdichte Null.
+
 ## Historie
 
 - **20.8.2026 (Tag 111):** Vorab-Check 1/3 (fragil), pending_precheck.
+- **9.9.2026 (Tag 132):** GDELT-Cluster-Motor v1+v2 gebaut & getestet → **geopolitischer Ast null**
+  (permutationskalibriert, Vola-Kanal). Höchster-ROI-Bau des Endspurt-Plans erledigt; Ergebnis:
+  verteidigbarer Null. Verstärkt den Null-Befund-Track.
 - **21.8.2026 (Tag 112):** Live-Readiness-Check **3/7** (`readiness_check.sh` auf `pendel-prod`).
   Datenfundament reif, 4 Bau-Items offen. H180.2 nicht mehr fragil (`non_unclear`=2). Endgültige
   Auswertung an der Fälligkeit ~5.11.2026 (append-only unter diesem Abschnitt).
