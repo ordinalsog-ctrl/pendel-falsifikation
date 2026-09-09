@@ -57,9 +57,14 @@ gates/
 tools/
   readiness_check.sh                Read-only Live-Check: sind wir bereit für Tag 180?
 motor/
-  compute_gdelt_cluster_impact.py   GDELT-Cluster-Causal-Motor (Prio 1) — Dry-Run-Default
-  schema_gdelt_cluster_impact.sql   Ergebnis-Tabelle
-  README.md                         Design + Deploy (Dry-Run vor enable) + Placebo-Lesart
+  compute_gdelt_cluster_impact.py   GDELT-Cluster-Causal-Motor v1 (Prio 1) — Dry-Run-Default
+  compute_gdelt_cluster_impact_hf.py  v2: stündlich + Vola + Permutation (read-only)
+  schema_gdelt_cluster_impact.sql   Ergebnis-Tabelle (v1)
+  README.md                         Design + Deploy + Placebo-Lesart
+pow/
+  pattern_of_the_week_fast.py       PoW-Crash-Fix (Karpathy-#38): Top-K-Preselect, reuse
+  pendel-pattern-of-the-week.{service,timer}  Reaktivierung (erst nach Verify enable)
+  README.md                         Ursache + Fix + Deploy (Verify vor enable)
 ```
 
 Jede Gate-Datei ist **eigenständig** und identisch aufgebaut: vorab-registrierte Hypothesen →

@@ -1,0 +1,15 @@
+# /etc/systemd/system/pendel-pattern-of-the-week.service
+# BD-2 (DEC-029) + Crash-Fix (Karpathy-#38): laeuft pattern_of_the_week_fast.py (Preselect-K).
+[Unit]
+Description=Pendel — Pattern of the Week (BD-2; Crash-Fix pattern_of_the_week_fast)
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=pendel
+Group=pendel
+WorkingDirectory=/opt/pendel/daemon
+ExecStart=/opt/pendel/venv/bin/python /opt/pendel/daemon/pattern_of_the_week_fast.py --out-dir=/opt/pendel/reports/pattern-of-the-week
+StandardOutput=append:/var/log/pendel/pattern_of_the_week.log
+StandardError=append:/var/log/pendel/pattern_of_the_week.log
+TimeoutStartSec=1800

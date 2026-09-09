@@ -1,0 +1,13 @@
+# /etc/systemd/system/pendel-pattern-of-the-week.timer
+# Woechentlich Sonntag 12:00 UTC (BD-2 Original-Kadenz). Erst ENABLE nach Verify-Lauf.
+[Unit]
+Description=Pendel — Pattern of the Week timer (Sonntag 12:00 UTC)
+Requires=pendel-pattern-of-the-week.service
+
+[Timer]
+OnCalendar=Sun *-*-* 12:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
