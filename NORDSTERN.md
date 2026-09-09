@@ -68,8 +68,12 @@ Daten-Asset** an der Schnittstelle **Geopolitik × Krypto × Makro**, der **übe
 - **Repo** = Falsifikations-Journal (`gates/`) + Integrität (`CONTROLS.md`) + Endspurt-Plan
   (`PLAN_TAG180_ENDSPURT.md`) + Motoren (`motor/`) + PoW-Fix (`pow/`).
 
-## 6. Offene Items — klar eingeordnet (kein Feuer, keine Eile)
-Alle vier dienen dem Asset **mittelbar**, keines ist dringend, keines erzwingt ein Ergebnis:
+## 6. Auf Kurs — offene Items geparkt, nächster Termin fix
+**Stand: abgeschlossen & auf Kurs.** Nichts Offenes erfordert Handlung vor dem nächsten
+Meilenstein. Der Asset wächst automatisch sauber weiter (Weg A läuft von selbst). **Nächster
+fester Termin: ~5.11.2026 (Tag 180) → `RUNBOOK_TAG180.md` Schritt 0–5 ausführen.**
+
+Geparkte Items (dienen dem Asset mittelbar, keines dringend, keines erzwingt ein Ergebnis):
 - **Novelty-Lock** — 471 unknowns adjudizieren + `crypto_beta`/klassisch aus PoW filtern (Gate-Politur + Breite).
 - **PoW-Timer reaktivieren** — erst *nach* Novelty-Filter (sonst Wochenbericht mit Artefakt-Aufmacher).
 - **Kandidat einfrieren** — Reproduktion sauber prüfbar machen.

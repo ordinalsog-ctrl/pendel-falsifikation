@@ -50,6 +50,7 @@ FALSIFIKATIONSKRITERIEN.md   Vorab-registrierte Kriterien (eingefroren, der Anke
 STATUS.md                    Aktuelle Scorecard (Tag 111) + Diskrepanz-Audit + Evidenzbasis
 CONTROLS.md                  Kontrolltage + Integritäts-Invarianten (gegen stille Datenfehler)
 PLAN_TAG180_ENDSPURT.md      Vorab-registrierter optimaler Einsatz bis Tag 180 (ROI-geordnet)
+RUNBOOK_TAG180.md            Turnkey-Prüfprozedur am Meilenstein ~5.11.2026 (Schritt 0–5)
 gates/
   tag-030-methodik-validierung.md   Kriterien + Auswertung an Fälligkeit + Verdikt
   tag-060-pattern-substanz.md
