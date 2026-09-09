@@ -45,6 +45,7 @@ Begründung: [STATUS.md](STATUS.md) §Diskrepanz-Audit.
 ## Aufbau
 
 ```
+NORDSTERN.md                 ★ ZUERST LESEN — Mission, was erwartbar ist, der klare Weg (Anti-Derail-Anker)
 FALSIFIKATIONSKRITERIEN.md   Vorab-registrierte Kriterien (eingefroren, der Anker)
 STATUS.md                    Aktuelle Scorecard (Tag 111) + Diskrepanz-Audit + Evidenzbasis
 CONTROLS.md                  Kontrolltage + Integritäts-Invarianten (gegen stille Datenfehler)
